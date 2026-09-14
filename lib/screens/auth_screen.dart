@@ -57,7 +57,7 @@ class AuthScreen extends StatelessWidget {
                 fit: BoxFit.contain,
               ),
             ),
-            
+
             // Sección informativa requerida por la rúbrica
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -97,18 +97,63 @@ class AuthScreen extends StatelessWidget {
   }
 }
 
-class _LoginFormulario extends StatelessWidget {
+class _LoginFormulario extends StatefulWidget {
   const _LoginFormulario();
 
   @override
+  State<_LoginFormulario> createState() => _LoginFormularioState();
+}
+
+class _LoginFormularioState extends State<_LoginFormulario> {
+  final _formKey = GlobalKey<FormState>();
+  final _correoController = TextEditingController();
+  final _claveController = TextEditingController();
+
+  void _iniciarSesion() {
+    if (!_formKey.currentState!.validate()) return;
+
+    // Usuario de prueba para la práctica. No usa Firebase Authentication.
+    final correo = _correoController.text.trim().toLowerCase();
+    final clave = _claveController.text;
+    if (correo == 'estudiante@burgerexpress.com' && clave == '123456') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const CatalogScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Correo o contraseña incorrectos')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _correoController.dispose();
+    _claveController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Form(
+        key: _formKey,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextFormField(
+              controller: _correoController,
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                final correo = value?.trim() ?? '';
+                if (correo.isEmpty) return 'Ingresa tu correo';
+                if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(correo)) {
+                  return 'Ingresa un correo válido';
+                }
+                return null;
+              },
               decoration: const InputDecoration(
                 labelText: 'Correo Electrónico',
                 prefixIcon: Icon(Icons.email),
@@ -116,7 +161,14 @@ class _LoginFormulario extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             TextFormField(
+              controller: _claveController,
               obscureText: true,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Ingresa tu contraseña';
+                }
+                return null;
+              },
               decoration: const InputDecoration(
                 labelText: 'Contraseña',
                 prefixIcon: Icon(Icons.lock),
@@ -131,18 +183,15 @@ class _LoginFormulario extends StatelessWidget {
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                 ),
-                // En auth_screen.dart, dentro de _LoginFormulario
-                onPressed: () {
-                  // Navegación temporal para probar el diseño del Catálogo
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CatalogScreen(),
-                    ), // Recuerda importar el archivo en auth_screen.dart
-                  );
-                },
+                onPressed: _iniciarSesion,
                 child: const Text('INGRESAR'),
               ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Usuario de prueba: estudiante@burgerexpress.com\n'
+              'Contraseña: 123456',
+              textAlign: TextAlign.center,
             ),
           ],
         ),

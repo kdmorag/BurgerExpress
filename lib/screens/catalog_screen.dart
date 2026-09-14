@@ -2,23 +2,32 @@ import 'package:flutter/material.dart';
 
 import 'auth_screen.dart';
 import 'admin_screen.dart';
+import 'client_registration_screen.dart';
 
-class CatalogScreen extends StatefulWidget {
-  const CatalogScreen({super.key});
+class _ProductoMenu {
+  const _ProductoMenu(this.nombre, this.categoria, this.precio);
 
-  @override
-  State<CatalogScreen> createState() => _CatalogScreenState();
+  final String nombre;
+  final String categoria;
+  final double precio;
 }
 
-class _CatalogScreenState extends State<CatalogScreen> {
-  // Estado local temporal para el prototipo visual
-  int _categoriaSeleccionada = 0;
-  final List<String> _categorias = [
-    'Hamburguesas',
-    'Combos',
-    'Extras',
-    'Bebidas',
-  ]; // Categorización requerida
+class CatalogScreen extends StatelessWidget {
+  const CatalogScreen({super.key});
+
+  static const _categorias = ['Hamburguesas', 'Combos', 'Extras', 'Bebidas'];
+
+  // Datos locales para practicar ListView y la navegación por categorías.
+  static const _productos = [
+    _ProductoMenu('Burger Clásica', 'Hamburguesas', 8.99),
+    _ProductoMenu('Burger Doble', 'Hamburguesas', 10.50),
+    _ProductoMenu('Combo Personal', 'Combos', 12.00),
+    _ProductoMenu('Combo Familiar', 'Combos', 15.50),
+    _ProductoMenu('Papas fritas', 'Extras', 2.50),
+    _ProductoMenu('Aros de cebolla', 'Extras', 3.00),
+    _ProductoMenu('Gaseosa', 'Bebidas', 1.50),
+    _ProductoMenu('Agua', 'Bebidas', 1.00),
+  ];
 
   void _mostrarFormularioPedido(BuildContext context) {
     showModalBottomSheet(
@@ -107,134 +116,94 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Menú BurgerExpress'),
-        actions: [
-          IconButton(
-            tooltip: 'Cerrar sesión',
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const AuthScreen()),
-              );
-            },
+    // El controlador mantiene sincronizados TabBar y TabBarView.
+    return DefaultTabController(
+      length: _categorias.length,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Menú BurgerExpress'),
+          bottom: TabBar(
+            isScrollable: true,
+            tabs: [for (final categoria in _categorias) Tab(text: categoria)],
           ),
-          IconButton(
-            tooltip: 'Administración',
-            icon: const Icon(Icons.admin_panel_settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Badge(
-              label: Text('1'),
-              child: Icon(Icons.shopping_cart),
+          actions: [
+            PopupMenuButton<String>(
+              tooltip: 'Más opciones',
+              onSelected: (opcion) {
+                if (opcion == 'registrar_cliente') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ClientRegistrationScreen(),
+                    ),
+                  );
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'registrar_cliente',
+                  child: Text('Registrar cliente'),
+                ),
+              ],
             ),
-            onPressed: () => _mostrarFormularioPedido(context),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Selector de Categorías[cite: 1]
-          SizedBox(
-            height: 60,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: _categorias.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ChoiceChip(
-                    label: Text(_categorias[index]),
-                    selected: _categoriaSeleccionada == index,
-                    onSelected: (bool selected) {
-                      setState(() {
-                        _categoriaSeleccionada = index;
-                      });
-                    },
-                  ),
+            IconButton(
+              tooltip: 'Cerrar sesión',
+              icon: const Icon(Icons.logout),
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AuthScreen()),
                 );
               },
             ),
-          ),
-          // Grilla de Productos[cite: 1]
-          Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.75,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+            IconButton(
+              tooltip: 'Administración',
+              icon: const Icon(Icons.admin_panel_settings),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminScreen()),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Badge(
+                label: Text('1'),
+                child: Icon(Icons.shopping_cart),
               ),
-              itemCount: 6, // Elementos ficticios para el mockup
-              itemBuilder: (context, index) {
-                return Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Placeholder para la imagen del producto
-                      Expanded(
-                        child: Container(
-                          color: Colors.grey.shade300,
-                          width: double.infinity,
-                          child: const Icon(
-                            Icons.fastfood,
-                            size: 48,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Producto ${index + 1}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const Text(
-                              '\$8.99',
-                              style: TextStyle(
-                                color: Colors.deepOrange,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton(
-                                onPressed: () {
-                                  // TODO: Lógica para agregar al carrito
-                                },
-                                child: const Text('Agregar'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              onPressed: () => _mostrarFormularioPedido(context),
             ),
-          ),
-        ],
+          ],
+        ),
+        body: TabBarView(
+          children: [
+            for (final categoria in _categorias)
+              _crearListaProductos(categoria),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _crearListaProductos(String categoria) {
+    final productosCategoria = _productos
+        .where((producto) => producto.categoria == categoria)
+        .toList();
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: productosCategoria.length,
+      itemBuilder: (context, index) {
+        final producto = productosCategoria[index];
+        return Card(
+          child: ListTile(
+            leading: const Icon(Icons.fastfood, color: Colors.deepOrange),
+            title: Text(producto.nombre),
+            subtitle: Text(producto.categoria),
+            trailing: Text('\$${producto.precio.toStringAsFixed(2)}'),
+          ),
+        );
+      },
     );
   }
 }
