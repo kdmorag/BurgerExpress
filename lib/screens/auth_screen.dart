@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'catalog_screen.dart';
+import '../service/cliente_service.dart';
 
 class AuthScreen extends StatelessWidget {
-  const AuthScreen({super.key});
+  const AuthScreen({super.key, this.clienteService = const ClienteService()});
+
+  final ClienteService clienteService;
 
   void _mostrarInfo(BuildContext context, String titulo, String contenido) {
     showModalBottomSheet(
@@ -85,9 +88,12 @@ class AuthScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const Expanded(
+            Expanded(
               child: TabBarView(
-                children: [_LoginFormulario(), _RegistroFormulario()],
+                children: [
+                  _LoginFormulario(clienteService: clienteService),
+                  const _RegistroFormulario(),
+                ],
               ),
             ),
           ],
@@ -98,7 +104,9 @@ class AuthScreen extends StatelessWidget {
 }
 
 class _LoginFormulario extends StatefulWidget {
-  const _LoginFormulario();
+  const _LoginFormulario({required this.clienteService});
+
+  final ClienteService clienteService;
 
   @override
   State<_LoginFormulario> createState() => _LoginFormularioState();
@@ -118,7 +126,9 @@ class _LoginFormularioState extends State<_LoginFormulario> {
     if (correo == 'estudiante@burgerexpress.com' && clave == '123456') {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const CatalogScreen()),
+        MaterialPageRoute(
+          builder: (_) => CatalogScreen(clienteService: widget.clienteService),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

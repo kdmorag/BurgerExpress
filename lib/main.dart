@@ -2,12 +2,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'firebase_options.dart';
+
 import 'screens/auth_screen.dart';
+import 'service/cliente_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final firebaseApp = await Firebase.initializeApp();
+  final firebaseApp = await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   if (kDebugMode) {
     debugPrint(
@@ -19,7 +24,12 @@ Future<void> main() async {
 }
 
 class BurgerExpressApp extends StatelessWidget {
-  const BurgerExpressApp({super.key});
+  const BurgerExpressApp({
+    super.key,
+    this.clienteService = const ClienteService(),
+  });
+
+  final ClienteService clienteService;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +46,7 @@ class BurgerExpressApp extends StatelessWidget {
         ),
       ),
       // Definición inicial de la ruta
-      home: const AuthScreen(),
+      home: AuthScreen(clienteService: clienteService),
     );
   }
 }

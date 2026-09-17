@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../service/cliente_service.dart';
+import 'clients_view.dart';
+
 class Product {
   Product({
     required this.name,
@@ -14,20 +17,10 @@ class Product {
   int stock;
 }
 
-class Client {
-  const Client({
-    required this.name,
-    required this.email,
-    required this.registrationDate,
-  });
-
-  final String name;
-  final String email;
-  final String registrationDate;
-}
-
 class AdminScreen extends StatefulWidget {
-  const AdminScreen({super.key});
+  const AdminScreen({super.key, this.clienteService = const ClienteService()});
+
+  final ClienteService clienteService;
 
   @override
   State<AdminScreen> createState() => _AdminScreenState();
@@ -49,23 +42,8 @@ class _AdminScreenState extends State<AdminScreen> {
     ),
   ];
 
-  final List<Client> _clients = const [
-    Client(
-      name: 'Juan Pérez',
-      email: 'juan@email.com',
-      registrationDate: '01/09/2026',
-    ),
-    Client(
-      name: 'María López',
-      email: 'maria@email.com',
-      registrationDate: '02/09/2026',
-    ),
-  ];
-
   Future<void> _mostrarFormularioProducto({Product? producto}) async {
-    final nombreController = TextEditingController(
-      text: producto?.name ?? '',
-    );
+    final nombreController = TextEditingController(text: producto?.name ?? '');
     final precioController = TextEditingController(
       text: producto?.price.toString() ?? '',
     );
@@ -98,9 +76,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       initialValue: categoria,
-                      decoration: const InputDecoration(
-                        labelText: 'Categoría',
-                      ),
+                      decoration: const InputDecoration(labelText: 'Categoría'),
                       items: const [
                         DropdownMenuItem(
                           value: 'Hamburguesas',
@@ -162,7 +138,9 @@ class _AdminScreenState extends State<AdminScreen> {
                     if (nombre.isEmpty || precio == null || stock == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Completa todos los campos correctamente'),
+                          content: Text(
+                            'Completa todos los campos correctamente',
+                          ),
                         ),
                       );
                       return;
@@ -248,7 +226,7 @@ class _AdminScreenState extends State<AdminScreen> {
         body: TabBarView(
           children: [
             _construirVistaProductos(),
-            _construirVistaClientes(),
+            ClientsView(clienteService: widget.clienteService),
           ],
         ),
         floatingActionButton: Builder(
@@ -277,9 +255,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Widget _construirVistaProductos() {
     if (_products.isEmpty) {
-      return const Center(
-        child: Text('No hay productos registrados'),
-      );
+      return const Center(child: Text('No hay productos registrados'));
     }
 
     return ListView.separated(
@@ -291,72 +267,35 @@ class _AdminScreenState extends State<AdminScreen> {
 
         return Card(
           child: ListTile(
-            leading: const CircleAvatar(
-              child: Icon(Icons.fastfood),
-            ),
+            leading: const CircleAvatar(child: Icon(Icons.fastfood)),
             title: Text(producto.name),
-            subtitle: Text(
-              '${producto.category} • Stock: ${producto.stock}',
-            ),
-            trailing: SizedBox(
-              width: 110,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    '\$${producto.price.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'editar') {
-                        _mostrarFormularioProducto(producto: producto);
-                      } else {
-                        _eliminarProducto(producto);
-                      }
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
-                        value: 'editar',
-                        child: Text('Editar'),
-                      ),
-                      PopupMenuItem(
-                        value: 'eliminar',
-                        child: Text('Eliminar'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            subtitle: Text('${producto.category} • Stock: ${producto.stock}'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  '\$${producto.price.toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'editar') {
+                      _mostrarFormularioProducto(producto: producto);
+                    } else {
+                      _eliminarProducto(producto);
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'editar', child: Text('Editar')),
+                    PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
+                  ],
+                ),
+              ],
             ),
           ),
         );
       },
-    );
-  }
-
-  Widget _construirVistaClientes() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Cliente')),
-          DataColumn(label: Text('Correo')),
-          DataColumn(label: Text('Registro')),
-        ],
-        rows: _clients
-            .map(
-              (client) => DataRow(
-                cells: [
-                  DataCell(Text(client.name)),
-                  DataCell(Text(client.email)),
-                  DataCell(Text(client.registrationDate)),
-                ],
-              ),
-            )
-            .toList(),
-      ),
     );
   }
 }

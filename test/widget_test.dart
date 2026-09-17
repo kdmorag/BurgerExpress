@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:burgerexpress/main.dart';
+import 'package:burgerexpress/service/cliente_service.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 
 void main() {
   testWidgets('muestra la pantalla de autenticación', (tester) async {
-    await tester.pumpWidget(const BurgerExpressApp());
+    await tester.pumpWidget(
+      BurgerExpressApp(
+        clienteService: ClienteService(firestore: FakeFirebaseFirestore()),
+      ),
+    );
 
     expect(find.text('BurgerExpress'), findsOneWidget);
     expect(find.text('INICIAR SESIÓN'), findsOneWidget);
@@ -14,7 +20,11 @@ void main() {
   });
 
   testWidgets('permite cambiar al formulario de registro', (tester) async {
-    await tester.pumpWidget(const BurgerExpressApp());
+    await tester.pumpWidget(
+      BurgerExpressApp(
+        clienteService: ClienteService(firestore: FakeFirebaseFirestore()),
+      ),
+    );
 
     await tester.tap(find.text('REGISTRO'));
     await tester.pumpAndSettle();
@@ -24,7 +34,11 @@ void main() {
   });
 
   testWidgets('valida campos vacíos y el formato del correo', (tester) async {
-    await tester.pumpWidget(const BurgerExpressApp());
+    await tester.pumpWidget(
+      BurgerExpressApp(
+        clienteService: ClienteService(firestore: FakeFirebaseFirestore()),
+      ),
+    );
     await tester.tap(find.text('INGRESAR'));
     await tester.pump();
 
@@ -39,7 +53,11 @@ void main() {
   });
 
   testWidgets('rechaza credenciales incorrectas', (tester) async {
-    await tester.pumpWidget(const BurgerExpressApp());
+    await tester.pumpWidget(
+      BurgerExpressApp(
+        clienteService: ClienteService(firestore: FakeFirebaseFirestore()),
+      ),
+    );
     await tester.enterText(
       find.byType(TextFormField).first,
       'estudiante@burgerexpress.com',
@@ -55,7 +73,11 @@ void main() {
   testWidgets('inicia sesión, navega por categorías y cierra sesión', (
     tester,
   ) async {
-    await tester.pumpWidget(const BurgerExpressApp());
+    await tester.pumpWidget(
+      BurgerExpressApp(
+        clienteService: ClienteService(firestore: FakeFirebaseFirestore()),
+      ),
+    );
     await tester.enterText(
       find.byType(TextFormField).first,
       'estudiante@burgerexpress.com',
@@ -99,7 +121,11 @@ void main() {
   });
 
   testWidgets('abre el registro de clientes desde el menú', (tester) async {
-    await tester.pumpWidget(const BurgerExpressApp());
+    await tester.pumpWidget(
+      BurgerExpressApp(
+        clienteService: ClienteService(firestore: FakeFirebaseFirestore()),
+      ),
+    );
     await tester.enterText(
       find.byType(TextFormField).first,
       'estudiante@burgerexpress.com',
@@ -131,7 +157,7 @@ void main() {
     await tester.enterText(campos.at(3), '0999999999');
     await tester.enterText(campos.at(4), 'Guayaquil');
     await tester.tap(find.text('REGISTRAR CLIENTE'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('Cliente registrado correctamente'), findsOneWidget);
   });
 }

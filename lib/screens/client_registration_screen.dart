@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../models/cliente.dart';
+import '../service/cliente_service.dart';
+
 class ClientRegistrationScreen extends StatefulWidget {
-  const ClientRegistrationScreen({super.key});
+  const ClientRegistrationScreen({
+    super.key,
+    this.cliente,
+    this.clienteService = const ClienteService(),
+  });
+
+  final Cliente? cliente;
+  final ClienteService clienteService;
 
   @override
   State<ClientRegistrationScreen> createState() =>
@@ -16,19 +26,71 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   final _telefonoController = TextEditingController();
   final _ciudadController = TextEditingController();
 
-  void _guardarCliente() {
-    if (!_formKey.currentState!.validate()) return;
+  bool _guardando = false;
+  String? _error;
+  bool get _editando => widget.cliente != null;
 
-    // Por ahora solo mostramos la confirmación; después se puede guardar en Firebase.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Cliente registrado correctamente')),
+  @override
+  void initState() {
+    super.initState();
+    final cliente = widget.cliente;
+    if (cliente != null) {
+      _cedulaController.text = cliente.cedula;
+      _nombreController.text = cliente.nombre;
+      _direccionController.text = cliente.direccion;
+      _telefonoController.text = cliente.telefono;
+      _ciudadController.text = cliente.ciudad;
+    }
+  }
+
+  Future<void> _guardarCliente() async {
+    if (_guardando || !_formKey.currentState!.validate()) return;
+    setState(() {
+      _guardando = true;
+      _error = null;
+    });
+    final cliente = Cliente(
+      cedula: _cedulaController.text.trim(),
+      nombre: _nombreController.text.trim(),
+      direccion: _direccionController.text.trim(),
+      telefono: _telefonoController.text.trim(),
+      ciudad: _ciudadController.text.trim(),
     );
-    _formKey.currentState!.reset();
-    _cedulaController.clear();
-    _nombreController.clear();
-    _direccionController.clear();
-    _telefonoController.clear();
-    _ciudadController.clear();
+    try {
+      if (_editando) {
+        await widget.clienteService.actualizarCliente(cliente);
+      } else {
+        await widget.clienteService.crearCliente(cliente);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _editando
+                ? 'Cliente actualizado correctamente'
+                : 'Cliente registrado correctamente',
+          ),
+        ),
+      );
+      if (_editando) {
+        Navigator.pop(context, true);
+      } else {
+        _formKey.currentState!.reset();
+        for (final controller in [
+          _cedulaController,
+          _nombreController,
+          _direccionController,
+          _telefonoController,
+          _ciudadController,
+        ]) {
+          controller.clear();
+        }
+      }
+    } catch (error) {
+      if (mounted) setState(() => _error = mensajeErrorCliente(error));
+    } finally {
+      if (mounted) setState(() => _guardando = false);
+    }
   }
 
   @override
@@ -51,17 +113,22 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Registro de clientes')),
+      appBar: AppBar(
+        title: Text(_editando ? 'Editar cliente' : 'Registro de clientes'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
+          canPop: !_guardando,
           key: _formKey,
           child: Column(
             children: [
               TextFormField(
                 controller: _cedulaController,
+                readOnly: _editando,
+                enabled: !_guardando,
                 keyboardType: TextInputType.number,
-                validator: _campoRequerido,
+                validator: ClienteService.validarCedula,
                 decoration: const InputDecoration(
                   labelText: 'Cédula',
                   prefixIcon: Icon(Icons.badge),
@@ -70,6 +137,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _nombreController,
+                enabled: !_guardando,
                 validator: _campoRequerido,
                 decoration: const InputDecoration(
                   labelText: 'Nombre completo',
@@ -79,6 +147,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _direccionController,
+                enabled: !_guardando,
                 validator: _campoRequerido,
                 decoration: const InputDecoration(
                   labelText: 'Dirección',
@@ -88,6 +157,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _telefonoController,
+                enabled: !_guardando,
                 keyboardType: TextInputType.phone,
                 validator: _campoRequerido,
                 decoration: const InputDecoration(
@@ -98,20 +168,40 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _ciudadController,
+                enabled: !_guardando,
                 validator: _campoRequerido,
                 decoration: const InputDecoration(
                   labelText: 'Ciudad',
                   prefixIcon: Icon(Icons.location_city),
                 ),
               ),
+              if (_error != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton.icon(
-                  onPressed: _guardarCliente,
-                  icon: const Icon(Icons.save),
-                  label: const Text('REGISTRAR CLIENTE'),
+                  onPressed: _guardando ? null : _guardarCliente,
+                  icon: _guardando
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save),
+                  label: Text(
+                    _guardando
+                        ? 'GUARDANDO...'
+                        : _editando
+                        ? 'ACTUALIZAR CLIENTE'
+                        : 'REGISTRAR CLIENTE',
+                  ),
                 ),
               ),
             ],

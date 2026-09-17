@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'auth_screen.dart';
+import '../service/cliente_service.dart';
 import 'admin_screen.dart';
 import 'client_registration_screen.dart';
 
@@ -13,7 +14,12 @@ class _ProductoMenu {
 }
 
 class CatalogScreen extends StatelessWidget {
-  const CatalogScreen({super.key});
+  const CatalogScreen({
+    super.key,
+    this.clienteService = const ClienteService(),
+  });
+
+  final ClienteService clienteService;
 
   static const _categorias = ['Hamburguesas', 'Combos', 'Extras', 'Bebidas'];
 
@@ -30,6 +36,7 @@ class CatalogScreen extends StatelessWidget {
   ];
 
   void _mostrarFormularioPedido(BuildContext context) {
+    var tipoEntrega = 1;
     showModalBottomSheet(
       context: context,
       isScrollControlled:
@@ -61,25 +68,26 @@ class CatalogScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             // Opciones de entrega requeridas por el negocio TM1[cite: 1]
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile(
-                    value: 1,
-                    groupValue: 1,
-                    onChanged: (v) {},
-                    title: const Text('Local'),
-                  ),
+            StatefulBuilder(
+              builder: (context, setModalState) => RadioGroup<int>(
+                groupValue: tipoEntrega,
+                onChanged: (valor) {
+                  if (valor != null) setModalState(() => tipoEntrega = valor);
+                },
+                child: const Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<int>(value: 1, title: Text('Local')),
+                    ),
+                    Expanded(
+                      child: RadioListTile<int>(
+                        value: 2,
+                        title: Text('Domicilio'),
+                      ),
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: RadioListTile(
-                    value: 2,
-                    groupValue: 1,
-                    onChanged: (v) {},
-                    title: const Text('Domicilio'),
-                  ),
-                ),
-              ],
+              ),
             ),
             TextFormField(
               decoration: const InputDecoration(
@@ -134,7 +142,9 @@ class CatalogScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const ClientRegistrationScreen(),
+                      builder: (_) => ClientRegistrationScreen(
+                        clienteService: clienteService,
+                      ),
                     ),
                   );
                 }
@@ -152,7 +162,9 @@ class CatalogScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (_) => const AuthScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => AuthScreen(clienteService: clienteService),
+                  ),
                 );
               },
             ),
@@ -162,7 +174,9 @@ class CatalogScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AdminScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => AdminScreen(clienteService: clienteService),
+                  ),
                 );
               },
             ),
