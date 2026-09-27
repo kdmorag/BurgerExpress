@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:burgerexpress/main.dart';
+import 'package:burgerexpress/screens/catalog_screen.dart';
 import 'package:burgerexpress/service/cliente_service.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 
@@ -44,7 +45,7 @@ void main() {
 
     expect(find.text('Ingresa tu correo'), findsOneWidget);
     expect(find.text('Ingresa tu contraseña'), findsOneWidget);
-    expect(find.text('Menú BurgerExpress'), findsNothing);
+    expect(find.byType(CatalogScreen), findsNothing);
 
     await tester.enterText(find.byType(TextFormField).first, 'correo-invalido');
     await tester.tap(find.text('INGRESAR'));
@@ -67,7 +68,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Correo o contraseña incorrectos'), findsOneWidget);
-    expect(find.text('Menú BurgerExpress'), findsNothing);
+    expect(find.byType(CatalogScreen), findsNothing);
   });
 
   testWidgets('inicia sesión, navega por categorías y cierra sesión', (
@@ -86,31 +87,36 @@ void main() {
     await tester.tap(find.text('INGRESAR'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Menú BurgerExpress'), findsOneWidget);
-    expect(find.byType(ListView), findsOneWidget);
-    expect(find.text('Burger Clásica'), findsOneWidget);
-    expect(find.text('Combo Personal'), findsNothing);
-
-    await tester.tap(find.widgetWithText(Tab, 'Combos'));
-    await tester.pumpAndSettle();
-    expect(find.text('Combo Personal'), findsOneWidget);
+    expect(find.text('Explora el menú'), findsOneWidget);
     expect(find.text('Burger Clásica'), findsNothing);
+    for (final (categoria, productos, precio) in [
+      ('Hamburguesas', ['Burger Clásica', 'Burger Doble'], '\$8.99'),
+      ('Combos', ['Combo Personal', 'Combo Familiar'], '\$12.00'),
+      ('Extras', ['Papas fritas', 'Aros de cebolla'], '\$2.50'),
+      ('Bebidas', ['Gaseosa', 'Agua'], '\$1.50'),
+    ]) {
+      await tester.ensureVisible(find.text(categoria));
+      await tester.tap(find.text(categoria));
+      await tester.pumpAndSettle();
+      expect(find.text(categoria), findsOneWidget);
+      for (final producto in productos) {
+        expect(find.text(producto), findsOneWidget);
+      }
+      expect(find.text(precio), findsOneWidget);
+      if (categoria != 'Hamburguesas') {
+        expect(find.text('Burger Clásica'), findsNothing);
+      }
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(find.text('Explora el menú'), findsOneWidget);
+    }
 
-    // También se puede cambiar de categoría deslizando el contenido.
-    await tester.drag(find.byType(TabBarView), const Offset(-700, 0));
+    await tester.tap(find.byTooltip('Más opciones'));
     await tester.pumpAndSettle();
-    expect(find.text('Papas fritas'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(Tab, 'Bebidas'));
-    await tester.pumpAndSettle();
-    expect(find.text('Gaseosa'), findsOneWidget);
-    expect(find.text('Agua'), findsOneWidget);
-    expect(find.text('\$1.50'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Cerrar sesión'));
+    await tester.tap(find.text('Cerrar sesión'));
     await tester.pumpAndSettle();
     expect(find.text('INGRESAR'), findsOneWidget);
-    expect(find.text('Menú BurgerExpress'), findsNothing);
+    expect(find.byType(CatalogScreen), findsNothing);
     expect(
       tester
           .widget<TextFormField>(find.byType(TextFormField).first)
@@ -119,6 +125,38 @@ void main() {
       isEmpty,
     );
   });
+
+  for (final escala in [1.0, 2.0]) {
+    testWidgets('categorías y productos en móvil con escala $escala', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(escala)),
+            child: child!,
+          ),
+          home: const CatalogScreen(),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      for (final categoria in ['Hamburguesas', 'Combos', 'Extras', 'Bebidas']) {
+        await tester.ensureVisible(find.text(categoria));
+        await tester.tap(find.text(categoria));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.byTooltip('Ver pedido'), findsOneWidget);
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('abre el registro de clientes desde el menú', (tester) async {
     await tester.pumpWidget(
